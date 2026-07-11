@@ -1,0 +1,5 @@
+# Ignorar ejecutables y archivos compilados
+*.exe
+*.o
+*.out
+.vscode/
