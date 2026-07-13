@@ -1,0 +1,2 @@
+id,name,last_name,gender,age,id_boss,is_dead,in_jail,was_boss,is_boss
+1,Vito,Corleone,H,65,0,0,0,0,1
