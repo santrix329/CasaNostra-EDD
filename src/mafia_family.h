@@ -29,7 +29,8 @@ private:
                   bool was_boss, bool is_boss);
     };
 
-    MafiaNode* root;   // raiz del arbol
+    MafiaNode* root;              // raiz del arbol
+    static const int AGE_LIMIT = 70;  // edad maxima para ejercer o suceder
 
     // Libera recursivamente toda la memoria del arbol (usado por el destructor).
     void destroy(MafiaNode* node);
@@ -39,6 +40,18 @@ private:
     void attachToBoss(MafiaNode* newNode);
     // Cuenta recursivamente los miembros del arbol.
     int countMembers(MafiaNode* node) const;
+    // Devuelve el jefe actual (nodo con is_boss == 1) o nullptr si no hay.
+    MafiaNode* findCurrentBoss(MafiaNode* node) const;
+    // Un candidato es elegible si esta vivo, libre y dentro del limite de edad.
+    bool isEligible(MafiaNode* node) const;
+    // Altura del subarbol (cantidad de niveles).
+    int treeHeight(MafiaNode* node) const;
+    // Imprime en pantalla una linea con los datos y el estado de un miembro.
+    void printMemberLine(MafiaNode* node) const;
+    // Lista los sucesores elegibles del subarbol, generacion por generacion.
+    void printSuccessorsByGeneration(MafiaNode* boss) const;
+    // Imprime los miembros elegibles ubicados exactamente a una profundidad dada.
+    void printEligibleAtDepth(MafiaNode* node, int depth, int& order) const;
 
 public:
     MafiaFamily();
@@ -48,6 +61,8 @@ public:
     bool loadFromCsv(const std::string& path);
     // Cantidad total de miembros cargados en el arbol.
     int countMembers() const;
+    // Muestra la linea de sucesion actual (solo miembros elegibles).
+    void showSuccessionLine() const;
 };
 
 #endif

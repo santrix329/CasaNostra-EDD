@@ -133,3 +133,99 @@ int MafiaFamily::countMembers(MafiaNode* node) const {
 int MafiaFamily::countMembers() const {
     return countMembers(root);
 }
+
+// Devuelve el jefe actual (nodo con is_boss == 1). Recorrido en preorden.
+MafiaFamily::MafiaNode* MafiaFamily::findCurrentBoss(MafiaNode* node) const {
+    if (node == nullptr) {
+        return nullptr;
+    }
+    if (node->is_boss) {
+        return node;
+    }
+    MafiaNode* found = findCurrentBoss(node->left);
+    if (found != nullptr) {
+        return found;
+    }
+    return findCurrentBoss(node->right);
+}
+
+// Un candidato es elegible si esta vivo, libre y dentro del limite de edad.
+bool MafiaFamily::isEligible(MafiaNode* node) const {
+    return node != nullptr && !node->is_dead && !node->in_jail
+           && node->age <= AGE_LIMIT;
+}
+
+// Altura del subarbol: cantidad de niveles desde node hacia abajo.
+int MafiaFamily::treeHeight(MafiaNode* node) const {
+    if (node == nullptr) {
+        return 0;
+    }
+    int leftHeight = treeHeight(node->left);
+    int rightHeight = treeHeight(node->right);
+    return 1 + (leftHeight > rightHeight ? leftHeight : rightHeight);
+}
+
+// Imprime una linea con los datos y el estado de un miembro.
+void MafiaFamily::printMemberLine(MafiaNode* node) const {
+    std::cout << node->name << " " << node->last_name
+              << " (id " << node->id << ", " << node->age << " anios, "
+              << node->gender << ")";
+    if (node->is_boss) {
+        std::cout << " [JEFE]";
+    }
+    if (node->is_dead) {
+        std::cout << " [MUERTO]";
+    }
+    if (node->in_jail) {
+        std::cout << " [PRESO]";
+    }
+    if (node->age > AGE_LIMIT) {
+        std::cout << " [+70]";
+    }
+    std::cout << "\n";
+}
+
+// Imprime los miembros elegibles ubicados exactamente a la profundidad indicada,
+// recorriendo de izquierda a derecha (respeta el orden de sucesion).
+void MafiaFamily::printEligibleAtDepth(MafiaNode* node, int depth, int& order) const {
+    if (node == nullptr) {
+        return;
+    }
+    if (depth == 0) {
+        if (isEligible(node)) {
+            ++order;
+            std::cout << "  " << order << ". ";
+            printMemberLine(node);
+        }
+        return;
+    }
+    printEligibleAtDepth(node->left, depth - 1, order);
+    printEligibleAtDepth(node->right, depth - 1, order);
+}
+
+// Lista los sucesores del subarbol del jefe, generacion por generacion
+// (los subordinados directos primero, luego la siguiente generacion, etc.).
+void MafiaFamily::printSuccessorsByGeneration(MafiaNode* boss) const {
+    int height = treeHeight(boss);
+    int order = 0;
+    for (int depth = 1; depth < height; ++depth) {
+        printEligibleAtDepth(boss, depth, order);
+    }
+    if (order == 0) {
+        std::cout << "  (no hay sucesores elegibles en su linea)\n";
+    }
+}
+
+// Muestra la linea de sucesion actual a partir del jefe.
+void MafiaFamily::showSuccessionLine() const {
+    MafiaNode* boss = findCurrentBoss(root);
+    std::cout << "=== Linea de sucesion actual ===\n";
+    if (boss == nullptr) {
+        std::cout << "No hay un jefe asignado actualmente.\n";
+        return;
+    }
+    std::cout << "Jefe actual: ";
+    printMemberLine(boss);
+    std::cout << "Sucesores (vivos, libres y dentro del limite de edad):\n";
+    printSuccessorsByGeneration(boss);
+}
