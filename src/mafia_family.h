@@ -82,6 +82,8 @@ public:
     void listAllMembers() const;
     // Edita los datos de un miembro (no se permiten cambiar id ni id_boss).
     bool editMember(int id);
+    // Bucle interactivo principal: se ejecuta hasta que el usuario elige salir.
+    void run();
 };
 
 #endif

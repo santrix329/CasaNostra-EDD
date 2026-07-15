@@ -510,3 +510,54 @@ bool MafiaFamily::editMember(int id) {
     printMemberLine(node);
     return true;
 }
+
+// Bucle interactivo principal. Se ejecuta hasta que el usuario elige salir (0).
+void MafiaFamily::run() {
+    int option = -1;
+    do {
+        std::cout << "\n===== CASA NOSTRA - Sistema de sucesion =====\n"
+                  << "  1) Ver linea de sucesion actual\n"
+                  << "  2) Listar todos los miembros\n"
+                  << "  3) Editar un miembro\n"
+                  << "  0) Salir\n> ";
+
+        if (!(std::cin >> option)) {
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            std::cout << "Entrada invalida. Intente de nuevo.\n";
+            option = -1;
+            continue;
+        }
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+        switch (option) {
+            case 1:
+                reassignBossIfNeeded();   // asegura que el jefe vigente sea apto
+                showSuccessionLine();
+                break;
+            case 2:
+                listAllMembers();
+                break;
+            case 3: {
+                std::cout << "Id del miembro a editar: ";
+                int id;
+                if (std::cin >> id) {
+                    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                    editMember(id);
+                    reassignBossIfNeeded();  // el cambio puede dejar sin puesto al jefe
+                } else {
+                    std::cin.clear();
+                    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                    std::cout << "Id invalido.\n";
+                }
+                break;
+            }
+            case 0:
+                std::cout << "Cerrando el sistema. Que la familia perdure.\n";
+                break;
+            default:
+                std::cout << "Opcion no reconocida.\n";
+                break;
+        }
+    } while (option != 0);
+}

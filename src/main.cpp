@@ -8,8 +8,7 @@ int main() {
         return 1;
     }
 
-    std::cout << "Familia cargada: " << family.countMembers() << " miembros.\n\n";
-    family.reassignBossIfNeeded();
-    family.showSuccessionLine();
+    family.reassignBossIfNeeded();  // por si el CSV trae un jefe que ya no puede ejercer
+    family.run();
     return 0;
 }
