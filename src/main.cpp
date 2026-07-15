@@ -1,8 +1,8 @@
 #include <iostream>
-
-using namespace std;
+#include "mafia_family.h"
 
 int main() {
-    cout << "Iniciando sistema de la familia" << endl;
+    MafiaFamily family;
+    std::cout << "Sistema de sucesion de la familia iniciado." << std::endl;
     return 0;
 }
