@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <limits>
 
 // Constructor del nodo: nace con sus datos y sin subordinados (punteros nulos).
 MafiaFamily::MafiaNode::MafiaNode(int id, const std::string& name,
@@ -366,4 +367,146 @@ void MafiaFamily::reassignBossIfNeeded() {
     successor->is_boss = true;
     std::cout << "El puesto cambio de manos. Nuevo jefe: ";
     printMemberLine(successor);
+}
+
+// Imprime todos los miembros del arbol en preorden.
+void MafiaFamily::printAll(MafiaNode* node) const {
+    if (node == nullptr) {
+        return;
+    }
+    std::cout << "  ";
+    printMemberLine(node);
+    printAll(node->left);
+    printAll(node->right);
+}
+
+// Lista todos los miembros (util para que el usuario identifique un id a editar).
+void MafiaFamily::listAllMembers() const {
+    std::cout << "=== Miembros de la familia ===\n";
+    if (root == nullptr) {
+        std::cout << "  (no hay miembros cargados)\n";
+        return;
+    }
+    printAll(root);
+}
+
+// Edita los datos de un miembro. No se permite modificar id ni id_boss, ya que
+// definen la identidad y la posicion del nodo dentro del arbol.
+bool MafiaFamily::editMember(int id) {
+    MafiaNode* node = findById(root, id);
+    if (node == nullptr) {
+        std::cout << "No existe un miembro con id " << id << ".\n";
+        return false;
+    }
+
+    std::cout << "Editando a ";
+    printMemberLine(node);
+    std::cout << "Campo a modificar:\n"
+              << "  1) Nombre\n"
+              << "  2) Apellido\n"
+              << "  3) Genero (H/M)\n"
+              << "  4) Edad\n"
+              << "  5) Vivo / Muerto\n"
+              << "  6) Libre / Preso\n"
+              << "  7) Fue jefe (was_boss)\n"
+              << "  0) Cancelar\n> ";
+
+    int option;
+    if (!(std::cin >> option)) {
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        std::cout << "Entrada invalida.\n";
+        return false;
+    }
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+    switch (option) {
+        case 1: {
+            std::cout << "Nuevo nombre: ";
+            std::string value;
+            std::getline(std::cin, value);
+            if (!value.empty()) {
+                node->name = value;
+            }
+            break;
+        }
+        case 2: {
+            std::cout << "Nuevo apellido: ";
+            std::string value;
+            std::getline(std::cin, value);
+            if (!value.empty()) {
+                node->last_name = value;
+            }
+            break;
+        }
+        case 3: {
+            std::cout << "Nuevo genero (H/M): ";
+            std::string value;
+            std::getline(std::cin, value);
+            if (!value.empty() && (value[0] == 'H' || value[0] == 'M')) {
+                node->gender = value[0];
+            } else {
+                std::cout << "Genero invalido; se mantiene el actual.\n";
+            }
+            break;
+        }
+        case 4: {
+            std::cout << "Nueva edad: ";
+            int value;
+            if (std::cin >> value && value >= 0) {
+                node->age = value;
+            } else {
+                std::cin.clear();
+                std::cout << "Edad invalida; se mantiene la actual.\n";
+            }
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            break;
+        }
+        case 5: {
+            std::cout << "Estado (0 = vivo, 1 = muerto): ";
+            int value;
+            if (std::cin >> value && (value == 0 || value == 1)) {
+                node->is_dead = (value == 1);
+            } else {
+                std::cin.clear();
+                std::cout << "Valor invalido; se mantiene el actual.\n";
+            }
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            break;
+        }
+        case 6: {
+            std::cout << "Estado (0 = libre, 1 = preso): ";
+            int value;
+            if (std::cin >> value && (value == 0 || value == 1)) {
+                node->in_jail = (value == 1);
+            } else {
+                std::cin.clear();
+                std::cout << "Valor invalido; se mantiene el actual.\n";
+            }
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            break;
+        }
+        case 7: {
+            std::cout << "Fue jefe (0 = no, 1 = si): ";
+            int value;
+            if (std::cin >> value && (value == 0 || value == 1)) {
+                node->was_boss = (value == 1);
+            } else {
+                std::cin.clear();
+                std::cout << "Valor invalido; se mantiene el actual.\n";
+            }
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            break;
+        }
+        case 0:
+            std::cout << "Edicion cancelada.\n";
+            return false;
+        default:
+            std::cout << "Opcion no reconocida.\n";
+            return false;
+    }
+
+    std::cout << "Datos actualizados: ";
+    printMemberLine(node);
+    return true;
 }

@@ -62,6 +62,8 @@ private:
     void printSuccessorsByGeneration(MafiaNode* boss) const;
     // Imprime los miembros elegibles ubicados exactamente a una profundidad dada.
     void printEligibleAtDepth(MafiaNode* node, int depth, int& order) const;
+    // Imprime todos los miembros del arbol (recorrido en preorden).
+    void printAll(MafiaNode* node) const;
 
 public:
     MafiaFamily();
@@ -76,6 +78,10 @@ public:
     // Reasigna el jefe automaticamente si el actual ya no puede ejercer
     // (muerto, preso o mayor del limite de edad).
     void reassignBossIfNeeded();
+    // Muestra todos los miembros con sus datos y estado (util para elegir un id).
+    void listAllMembers() const;
+    // Edita los datos de un miembro (no se permiten cambiar id ni id_boss).
+    bool editMember(int id);
 };
 
 #endif
