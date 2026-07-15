@@ -33,10 +33,21 @@ private:
 
     // Libera recursivamente toda la memoria del arbol (usado por el destructor).
     void destroy(MafiaNode* node);
+    // Busca un miembro por su id recorriendo el arbol (nullptr si no existe).
+    MafiaNode* findById(MafiaNode* node, int id) const;
+    // Cuelga un nodo nuevo de su jefe (id_boss) como subordinado izquierdo o derecho.
+    void attachToBoss(MafiaNode* newNode);
+    // Cuenta recursivamente los miembros del arbol.
+    int countMembers(MafiaNode* node) const;
 
 public:
     MafiaFamily();
     ~MafiaFamily();
+
+    // Lee el CSV y construye el arbol segun la relacion de jefatura (id_boss).
+    bool loadFromCsv(const std::string& path);
+    // Cantidad total de miembros cargados en el arbol.
+    int countMembers() const;
 };
 
 #endif

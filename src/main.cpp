@@ -3,6 +3,11 @@
 
 int main() {
     MafiaFamily family;
-    std::cout << "Sistema de sucesion de la familia iniciado." << std::endl;
+
+    if (!family.loadFromCsv("datos_familia.csv")) {
+        return 1;
+    }
+
+    std::cout << "Familia cargada: " << family.countMembers() << " miembros." << std::endl;
     return 0;
 }
