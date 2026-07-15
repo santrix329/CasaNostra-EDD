@@ -151,8 +151,19 @@ MafiaFamily::MafiaNode* MafiaFamily::findCurrentBoss(MafiaNode* node) const {
 
 // Un candidato es elegible si esta vivo, libre y dentro del limite de edad.
 bool MafiaFamily::isEligible(MafiaNode* node) const {
-    return node != nullptr && !node->is_dead && !node->in_jail
-           && node->age <= AGE_LIMIT;
+    return isEligible(node, false);
+}
+
+// Variante configurable: si allowJailed es true, un preso vivo tambien cuenta
+// (regla de ultimo recurso cuando ya no quedan candidatos libres).
+bool MafiaFamily::isEligible(MafiaNode* node, bool allowJailed) const {
+    if (node == nullptr || node->is_dead || node->age > AGE_LIMIT) {
+        return false;
+    }
+    if (!allowJailed && node->in_jail) {
+        return false;
+    }
+    return true;
 }
 
 // Altura del subarbol: cantidad de niveles desde node hacia abajo.
@@ -228,4 +239,131 @@ void MafiaFamily::showSuccessionLine() const {
     printMemberLine(boss);
     std::cout << "Sucesores (vivos, libres y dentro del limite de edad):\n";
     printSuccessorsByGeneration(boss);
+}
+
+// Primer miembro elegible a la profundidad indicada (recorrido de izquierda a derecha).
+MafiaFamily::MafiaNode* MafiaFamily::findEligibleAtDepth(MafiaNode* node, int depth,
+                                                         bool allowJailed) const {
+    if (node == nullptr) {
+        return nullptr;
+    }
+    if (depth == 0) {
+        return isEligible(node, allowJailed) ? node : nullptr;
+    }
+    MafiaNode* found = findEligibleAtDepth(node->left, depth - 1, allowJailed);
+    if (found != nullptr) {
+        return found;
+    }
+    return findEligibleAtDepth(node->right, depth - 1, allowJailed);
+}
+
+// Busca un sucesor dentro del subarbol, generacion por generacion. Excluye la
+// raiz del subarbol (depth 0) porque es el propio jefe que deja el puesto.
+MafiaFamily::MafiaNode* MafiaFamily::findHeirInSubtree(MafiaNode* subRoot,
+                                                       bool allowJailed) const {
+    if (subRoot == nullptr) {
+        return nullptr;
+    }
+    int height = treeHeight(subRoot);
+    for (int depth = 1; depth < height; ++depth) {
+        MafiaNode* found = findEligibleAtDepth(subRoot, depth, allowJailed);
+        if (found != nullptr) {
+            return found;
+        }
+    }
+    return nullptr;
+}
+
+// Primer miembro elegible en todo el arbol, empezando por la raiz (el mas cercano
+// a la cabeza de la familia). Sirve de ultimo recurso en la busqueda de sucesor.
+MafiaFamily::MafiaNode* MafiaFamily::findAnyEligible(bool allowJailed) const {
+    if (root == nullptr) {
+        return nullptr;
+    }
+    int height = treeHeight(root);
+    for (int depth = 0; depth < height; ++depth) {
+        MafiaNode* found = findEligibleAtDepth(root, depth, allowJailed);
+        if (found != nullptr) {
+            return found;
+        }
+    }
+    return nullptr;
+}
+
+// Aplica las reglas de sucesion (ADR-003) para hallar el reemplazo de un jefe
+// que deja el puesto. La busqueda escala nivel por nivel: nunca salta a la raiz.
+MafiaFamily::MafiaNode* MafiaFamily::findSuccessor(MafiaNode* leavingBoss,
+                                                   bool allowJailed) const {
+    if (leavingBoss == nullptr) {
+        return nullptr;
+    }
+
+    // Regla 1: buscar en el propio subarbol del jefe saliente.
+    MafiaNode* heir = findHeirInSubtree(leavingBoss, allowJailed);
+    if (heir != nullptr) {
+        return heir;
+    }
+
+    // Reglas 2-3: escalar nivel por nivel mirando la rama del sucesor hermano.
+    MafiaNode* current = leavingBoss;
+    MafiaNode* parent = findById(root, current->id_boss);
+    while (parent != nullptr) {
+        MafiaNode* sibling = (parent->left == current) ? parent->right : parent->left;
+        if (sibling != nullptr) {
+            if (isEligible(sibling, allowJailed)) {
+                return sibling;                       // el hermano mismo se vuelve jefe
+            }
+            heir = findHeirInSubtree(sibling, allowJailed);
+            if (heir != nullptr) {
+                return heir;
+            }
+        }
+        current = parent;
+        parent = findById(root, current->id_boss);
+    }
+
+    // Regla 4: agotadas las ramas hermanas, buscar el primer elegible de todo el
+    // arbol (implementacion base de "el jefe mas cercano con dos sucesores libres").
+    return findAnyEligible(allowJailed);
+}
+
+// Reasigna el jefe si el actual ya no puede ejercer (muerto, preso o mayor de 70).
+void MafiaFamily::reassignBossIfNeeded() {
+    MafiaNode* boss = findCurrentBoss(root);
+    if (boss == nullptr) {
+        // Caso borde: no hay jefe marcado; se elige al primer elegible del arbol.
+        MafiaNode* candidate = findAnyEligible(false);
+        if (candidate == nullptr) {
+            candidate = findAnyEligible(true);
+        }
+        if (candidate != nullptr) {
+            candidate->is_boss = true;
+            std::cout << "Se asigno un jefe inicial: ";
+            printMemberLine(candidate);
+        }
+        return;
+    }
+
+    if (isEligible(boss)) {
+        return;  // el jefe sigue siendo apto: no hay nada que reasignar
+    }
+
+    // El jefe dejo el puesto. Primero se busca un sucesor libre.
+    MafiaNode* successor = findSuccessor(boss, false);
+    if (successor == nullptr) {
+        // Regla 5: no quedan libres; se admite a los presos que sigan vivos.
+        successor = findSuccessor(boss, true);
+    }
+
+    boss->is_boss = false;
+    boss->was_boss = true;
+
+    if (successor == nullptr) {
+        std::cout << "No queda ningun sucesor posible: la familia se quedo sin jefe.\n";
+        return;
+    }
+
+    successor->is_boss = true;
+    std::cout << "El puesto cambio de manos. Nuevo jefe: ";
+    printMemberLine(successor);
 }

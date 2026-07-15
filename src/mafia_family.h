@@ -44,8 +44,18 @@ private:
     MafiaNode* findCurrentBoss(MafiaNode* node) const;
     // Un candidato es elegible si esta vivo, libre y dentro del limite de edad.
     bool isEligible(MafiaNode* node) const;
+    // Variante que permite (o no) incluir presos vivos, para la regla de ultimo recurso.
+    bool isEligible(MafiaNode* node, bool allowJailed) const;
     // Altura del subarbol (cantidad de niveles).
     int treeHeight(MafiaNode* node) const;
+    // Primer miembro elegible ubicado exactamente a la profundidad indicada.
+    MafiaNode* findEligibleAtDepth(MafiaNode* node, int depth, bool allowJailed) const;
+    // Busca un sucesor dentro de un subarbol, generacion por generacion (excluye la raiz del subarbol).
+    MafiaNode* findHeirInSubtree(MafiaNode* subRoot, bool allowJailed) const;
+    // Busca el primer miembro elegible en todo el arbol (el mas cercano a la raiz).
+    MafiaNode* findAnyEligible(bool allowJailed) const;
+    // Aplica las reglas de sucesion (ADR-003) para hallar el reemplazo de un jefe que deja el puesto.
+    MafiaNode* findSuccessor(MafiaNode* leavingBoss, bool allowJailed) const;
     // Imprime en pantalla una linea con los datos y el estado de un miembro.
     void printMemberLine(MafiaNode* node) const;
     // Lista los sucesores elegibles del subarbol, generacion por generacion.
@@ -63,6 +73,9 @@ public:
     int countMembers() const;
     // Muestra la linea de sucesion actual (solo miembros elegibles).
     void showSuccessionLine() const;
+    // Reasigna el jefe automaticamente si el actual ya no puede ejercer
+    // (muerto, preso o mayor del limite de edad).
+    void reassignBossIfNeeded();
 };
 
 #endif

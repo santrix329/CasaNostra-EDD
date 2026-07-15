@@ -9,6 +9,7 @@ int main() {
     }
 
     std::cout << "Familia cargada: " << family.countMembers() << " miembros.\n\n";
+    family.reassignBossIfNeeded();
     family.showSuccessionLine();
     return 0;
 }
