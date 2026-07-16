@@ -4,7 +4,8 @@
 int main() {
     MafiaFamily family;
 
-    if (!family.loadFromCsv("datos_familia.csv")) {
+    
+    if (!family.loadFromCsv("bin/datos_familia.csv")) {
         return 1;
     }
 
