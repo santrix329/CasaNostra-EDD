@@ -57,6 +57,11 @@ private:
     MafiaNode* findHeirInSubtree(MafiaNode* subRoot, bool allowJailed) const;
     // Busca el primer miembro elegible en todo el arbol (el mas cercano a la raiz).
     MafiaNode* findAnyEligible(bool allowJailed) const;
+    // primer jefe (a una profundidad dada) con sus dos subordinados fuera de la carcel.
+    MafiaNode* findTwoFreeAtDepth(MafiaNode* node, int depth, bool allowJailed) const;
+    // busca, generacion por generacion, el jefe mas cercano a la cabeza de la familia
+    // que tenga dos sucesores libres y devuelve al primero de ellos que sea elegible.
+    MafiaNode* findBossWithTwoFreeSuccessors(bool allowJailed) const;
     // Aplica las reglas de sucesion (ADR-003) para hallar el reemplazo de un jefe que deja el puesto.
     MafiaNode* findSuccessor(MafiaNode* leavingBoss, bool allowJailed) const;
     // Imprime en pantalla una linea con los datos y el estado de un miembro.

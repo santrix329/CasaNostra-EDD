@@ -316,8 +316,7 @@ void MafiaFamily::showSuccessionLine() const {
 }
 
 // Primer miembro elegible a la profundidad indicada (recorrido de izquierda a derecha).
-MafiaFamily::MafiaNode* MafiaFamily::findEligibleAtDepth(MafiaNode* node, int depth,
-                                                         bool allowJailed) const {
+MafiaFamily::MafiaNode* MafiaFamily::findEligibleAtDepth(MafiaNode* node, int depth, bool allowJailed) const {
     if (node == nullptr) {
         return nullptr;
     }
@@ -333,8 +332,7 @@ MafiaFamily::MafiaNode* MafiaFamily::findEligibleAtDepth(MafiaNode* node, int de
 
 // Busca un sucesor dentro del subarbol, generacion por generacion. Excluye la
 // raiz del subarbol (depth 0) porque es el propio jefe que deja el puesto.
-MafiaFamily::MafiaNode* MafiaFamily::findHeirInSubtree(MafiaNode* subRoot,
-                                                       bool allowJailed) const {
+MafiaFamily::MafiaNode* MafiaFamily::findHeirInSubtree(MafiaNode* subRoot, bool allowJailed) const {
     if (subRoot == nullptr) {
         return nullptr;
     }
@@ -364,10 +362,54 @@ MafiaFamily::MafiaNode* MafiaFamily::findAnyEligible(bool allowJailed) const {
     return nullptr;
 }
 
+// primer jefe a la profundidad indicada que tenga sus dos subordinados presentes
+// y fuera de la carcel; devuelve al primero de esos dos que sea elegible.
+MafiaFamily::MafiaNode* MafiaFamily::findTwoFreeAtDepth(MafiaNode* node, int depth,
+                                                        bool allowJailed) const {
+    if (node == nullptr) {
+        return nullptr;
+    }
+    if (depth == 0) {
+        MafiaNode* left = node->left;
+        MafiaNode* right = node->right;
+        // "dos sucesores fuera de la carcel": ambos existen y ninguno esta preso.
+        if (left != nullptr && right != nullptr && !left->in_jail && !right->in_jail) {
+            if (isEligible(left, allowJailed)) {
+                return left;
+            }
+            if (isEligible(right, allowJailed)) {
+                return right;
+            }
+        }
+        return nullptr;
+    }
+    MafiaNode* found = findTwoFreeAtDepth(node->left, depth - 1, allowJailed);
+    if (found != nullptr) {
+        return found;
+    }
+    return findTwoFreeAtDepth(node->right, depth - 1, allowJailed);
+}
+
+// recorre el arbol generacion por generacion desde la raiz y devuelve al primer
+// sucesor elegible del jefe mas cercano a la cabeza de la familia que tenga dos
+// subordinados libres.
+MafiaFamily::MafiaNode* MafiaFamily::findBossWithTwoFreeSuccessors(bool allowJailed) const {
+    if (root == nullptr) {
+        return nullptr;
+    }
+    int height = treeHeight(root);
+    for (int depth = 0; depth < height; ++depth) {
+        MafiaNode* found = findTwoFreeAtDepth(root, depth, allowJailed);
+        if (found != nullptr) {
+            return found;
+        }
+    }
+    return nullptr;
+}
+
 // Aplica las reglas de sucesion (ADR-003) para hallar el reemplazo de un jefe
 // que deja el puesto. La busqueda escala nivel por nivel: nunca salta a la raiz.
-MafiaFamily::MafiaNode* MafiaFamily::findSuccessor(MafiaNode* leavingBoss,
-                                                   bool allowJailed) const {
+MafiaFamily::MafiaNode* MafiaFamily::findSuccessor(MafiaNode* leavingBoss, bool allowJailed) const {
     if (leavingBoss == nullptr) {
         return nullptr;
     }
@@ -396,8 +438,14 @@ MafiaFamily::MafiaNode* MafiaFamily::findSuccessor(MafiaNode* leavingBoss,
         parent = findById(root, current->id_boss);
     }
 
-    // Regla 4: agotadas las ramas hermanas, buscar el primer elegible de todo el
-    // arbol (implementacion base de "el jefe mas cercano con dos sucesores libres").
+    // regla 5: agotadas las ramas hermanas, tomar al primer sucesor elegible del
+    // jefe mas cercano a la cabeza que tenga dos subordinados libres.
+    heir = findBossWithTwoFreeSuccessors(allowJailed);
+    if (heir != nullptr) {
+        return heir;
+    }
+
+    // ultimo recurso: cualquier miembro elegible del arbol (el mas cercano a la raiz).
     return findAnyEligible(allowJailed);
 }
 
