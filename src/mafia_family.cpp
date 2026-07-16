@@ -68,8 +68,11 @@ void MafiaFamily::attachToBoss(MafiaNode* newNode) {
     }
 }
 
-// Lee el CSV linea por linea y arma el arbol. Se asume que cada jefe aparece
-// antes que sus subordinados (orden natural del archivo de datos).
+/*
+ * loadFromCsv
+ * Lee el archivo CSV desordenado, guarda los miembros en una lista enlazada temporal 
+ * para respetar la prohibición de vectores y construye el árbol validando las jerarquías.
+ */
 bool MafiaFamily::loadFromCsv(const std::string& path) {
     std::ifstream file(path);
     if (!file.is_open()) {
@@ -77,48 +80,96 @@ bool MafiaFamily::loadFromCsv(const std::string& path) {
         return false;
     }
 
+    // Estructura de Lista Enlazada simple local para almacenar temporalmente los datos
+    struct TempNode {
+        MafiaNode* data;
+        TempNode* next;
+    };
+    TempNode* head = nullptr;
+
     std::string line;
     std::getline(file, line);  // descartar la cabecera
 
+    // 1. Leer todo el archivo y meterlo a la lista temporal
     while (std::getline(file, line)) {
-        if (line.empty()) {
-            continue;
-        }
+        if (line.empty()) continue;
         std::istringstream row(line);
         std::string field;
 
-        std::getline(row, field, ',');
-        int id = std::stoi(field);
-        std::string name;
-        std::getline(row, name, ',');
-        std::string last_name;
-        std::getline(row, last_name, ',');
-        std::getline(row, field, ',');
-        char gender = field.empty() ? '?' : field[0];
-        std::getline(row, field, ',');
-        int age = std::stoi(field);
-        std::getline(row, field, ',');
-        int id_boss = std::stoi(field);
-        std::getline(row, field, ',');
-        bool is_dead = (std::stoi(field) == 1);
-        std::getline(row, field, ',');
-        bool in_jail = (std::stoi(field) == 1);
-        std::getline(row, field, ',');
-        bool was_boss = (std::stoi(field) == 1);
-        std::getline(row, field, ',');
-        bool is_boss = (std::stoi(field) == 1);
+        std::getline(row, field, ','); int id = std::stoi(field);
+        std::string name; std::getline(row, name, ',');
+        std::string last_name; std::getline(row, last_name, ',');
+        std::getline(row, field, ','); char gender = field.empty() ? '?' : field[0];
+        std::getline(row, field, ','); int age = std::stoi(field);
+        std::getline(row, field, ','); int id_boss = std::stoi(field);
+        std::getline(row, field, ','); bool is_dead = (std::stoi(field) == 1);
+        std::getline(row, field, ','); bool in_jail = (std::stoi(field) == 1);
+        std::getline(row, field, ','); bool was_boss = (std::stoi(field) == 1);
+        std::getline(row, field, ','); bool is_boss = (std::stoi(field) == 1);
 
         MafiaNode* node = new MafiaNode(id, name, last_name, gender, age, id_boss,
                                         is_dead, in_jail, was_boss, is_boss);
 
-        if (id_boss == 0) {
-            root = node;         // raiz del arbol (jefe fundador de la estructura)
-        } else {
-            attachToBoss(node);  // cuelga del jefe correspondiente
+        TempNode* temp = new TempNode{node, head};
+        head = temp;
+    }
+    file.close();
+
+    // 2. Procesar la lista temporal construyendo el árbol jerárquico
+    while (head != nullptr) {
+        TempNode* actual = head;
+        TempNode* anterior = nullptr;
+        bool seInsertoAlguien = false;
+
+        while (actual != nullptr) {
+            bool insertado = false;
+
+            if (actual->data->id_boss == 0) {
+                if (root == nullptr) {
+                    root = actual->data; // Asignar el Jefe Supremo
+                    insertado = true;
+                }
+            } else {
+                // Verificar si el jefe ya existe en el árbol antes de pasarlo a attachToBoss
+                // Esto evita que attachToBoss elimine el nodo si el jefe aún no ha sido cargado.
+                MafiaNode* jefe = findById(root, actual->data->id_boss);
+                if (jefe != nullptr) {
+                    attachToBoss(actual->data);
+                    insertado = true;
+                }
+            }
+
+            if (insertado) {
+                // Desconectar el nodo temporal de la lista
+                if (anterior == nullptr) {
+                    head = actual->next;
+                } else {
+                    anterior->next = actual->next;
+                }
+                TempNode* aBorrar = actual;
+                actual = actual->next;
+                delete aBorrar; // Solo borramos la caja temporal, el MafiaNode ya está en el árbol
+                seInsertoAlguien = true;
+            } else {
+                // El jefe no está todavía, pasamos al siguiente
+                anterior = actual;
+                actual = actual->next;
+            }
+        }
+
+        // Prevención de bucle infinito si hay datos corruptos en el CSV
+        if (!seInsertoAlguien) {
+            std::cerr << "Advertencia: Algunos miembros no encontraron a su jefe y fueron descartados.\n";
+            while (head != nullptr) {
+                TempNode* aBorrar = head;
+                head = head->next;
+                delete aBorrar->data; // Evitar fugas de memoria
+                delete aBorrar;
+            }
+            break;
         }
     }
 
-    file.close();
     return true;
 }
 
