@@ -38,6 +38,9 @@ private:
     MafiaNode* findById(MafiaNode* node, int id) const;
     // Cuelga un nodo nuevo de su jefe (id_boss) como subordinado izquierdo o derecho.
     void attachToBoss(MafiaNode* newNode);
+    // convierte una cadena a entero sin lanzar excepciones (a diferencia de std::stoi):
+    // admite signo, ignora espacios y corta ante el primer caracter no numerico.
+    static int parseInt(const std::string& field);
     // Cuenta recursivamente los miembros del arbol.
     int countMembers(MafiaNode* node) const;
     // Devuelve el jefe actual (nodo con is_boss == 1) o nullptr si no hay.

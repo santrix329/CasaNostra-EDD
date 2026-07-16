@@ -68,9 +68,31 @@ void MafiaFamily::attachToBoss(MafiaNode* newNode) {
     }
 }
 
+// convierte una cadena a entero sin lanzar excepciones (a diferencia de std::stoi).
+// una cadena vacia o no numerica devuelve 0; corta ante el primer caracter no digito,
+// asi ignora espacios sobrantes o un '\r' final en archivos con formato windows.
+int MafiaFamily::parseInt(const std::string& field) {
+    int i = 0;
+    int length = static_cast<int>(field.length());
+    while (i < length && field[i] == ' ') {
+        i++;
+    }
+    bool negative = false;
+    if (i < length && field[i] == '-') {
+        negative = true;
+        i++;
+    }
+    int value = 0;
+    while (i < length && field[i] >= '0' && field[i] <= '9') {
+        value = value * 10 + (field[i] - '0');
+        i++;
+    }
+    return negative ? -value : value;
+}
+
 /*
  * loadFromCsv
- * Lee el archivo CSV desordenado, guarda los miembros en una lista enlazada temporal 
+ * Lee el archivo CSV desordenado, guarda los miembros en una lista enlazada temporal
  * para respetar la prohibición de vectores y construye el árbol validando las jerarquías.
  */
 bool MafiaFamily::loadFromCsv(const std::string& path) {
@@ -96,16 +118,16 @@ bool MafiaFamily::loadFromCsv(const std::string& path) {
         std::istringstream row(line);
         std::string field;
 
-        std::getline(row, field, ','); int id = std::stoi(field);
+        std::getline(row, field, ','); int id = parseInt(field);
         std::string name; std::getline(row, name, ',');
         std::string last_name; std::getline(row, last_name, ',');
         std::getline(row, field, ','); char gender = field.empty() ? '?' : field[0];
-        std::getline(row, field, ','); int age = std::stoi(field);
-        std::getline(row, field, ','); int id_boss = std::stoi(field);
-        std::getline(row, field, ','); bool is_dead = (std::stoi(field) == 1);
-        std::getline(row, field, ','); bool in_jail = (std::stoi(field) == 1);
-        std::getline(row, field, ','); bool was_boss = (std::stoi(field) == 1);
-        std::getline(row, field, ','); bool is_boss = (std::stoi(field) == 1);
+        std::getline(row, field, ','); int age = parseInt(field);
+        std::getline(row, field, ','); int id_boss = parseInt(field);
+        std::getline(row, field, ','); bool is_dead = (parseInt(field) == 1);
+        std::getline(row, field, ','); bool in_jail = (parseInt(field) == 1);
+        std::getline(row, field, ','); bool was_boss = (parseInt(field) == 1);
+        std::getline(row, field, ','); bool is_boss = (parseInt(field) == 1);
 
         MafiaNode* node = new MafiaNode(id, name, last_name, gender, age, id_boss,
                                         is_dead, in_jail, was_boss, is_boss);
