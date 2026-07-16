@@ -1,8 +1,14 @@
 #include <iostream>
-
-using namespace std;
+#include "mafia_family.h"
 
 int main() {
-    cout << "Iniciando sistema de la familia" << endl;
+    MafiaFamily family;
+
+    if (!family.loadFromCsv("datos_familia.csv")) {
+        return 1;
+    }
+
+    family.reassignBossIfNeeded();  // por si el CSV trae un jefe que ya no puede ejercer
+    family.run();
     return 0;
 }
