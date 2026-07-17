@@ -66,10 +66,6 @@ private:
     MafiaNode* findSuccessor(MafiaNode* leavingBoss, bool allowJailed) const;
     // Imprime en pantalla una linea con los datos y el estado de un miembro.
     void printMemberLine(MafiaNode* node) const;
-    // Lista los sucesores elegibles del subarbol, generacion por generacion.
-    void printSuccessorsByGeneration(MafiaNode* boss) const;
-    // Imprime los miembros elegibles ubicados exactamente a una profundidad dada.
-    void printEligibleAtDepth(MafiaNode* node, int depth, int& order) const;
     // Imprime todos los miembros del arbol (recorrido en preorden).
     void printAll(MafiaNode* node) const;
 
@@ -81,8 +77,10 @@ public:
     bool loadFromCsv(const std::string& path);
     // Cantidad total de miembros cargados en el arbol.
     int countMembers() const;
-    // Muestra la linea de sucesion actual (solo miembros elegibles).
-    void showSuccessionLine() const;
+    // muestra la linea de sucesion actual: la cadena de personas que tomarian el
+    // puesto, en orden, aplicando las condiciones de sucesion (solo vivos).
+    // no es const porque simula la cadena marcando estados y los restaura al final.
+    void showSuccessionLine();
     // Reasigna el jefe automaticamente si el actual ya no puede ejercer
     // (muerto, preso o mayor del limite de edad).
     void reassignBossIfNeeded();

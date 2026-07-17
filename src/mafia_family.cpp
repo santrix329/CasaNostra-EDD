@@ -270,39 +270,12 @@ void MafiaFamily::printMemberLine(MafiaNode* node) const {
     std::cout << "\n";
 }
 
-// Imprime los miembros elegibles ubicados exactamente a la profundidad indicada,
-// recorriendo de izquierda a derecha (respeta el orden de sucesion).
-void MafiaFamily::printEligibleAtDepth(MafiaNode* node, int depth, int& order) const {
-    if (node == nullptr) {
-        return;
-    }
-    if (depth == 0) {
-        if (isEligible(node)) {
-            ++order;
-            std::cout << "  " << order << ". ";
-            printMemberLine(node);
-        }
-        return;
-    }
-    printEligibleAtDepth(node->left, depth - 1, order);
-    printEligibleAtDepth(node->right, depth - 1, order);
-}
-
-// Lista los sucesores del subarbol del jefe, generacion por generacion
-// (los subordinados directos primero, luego la siguiente generacion, etc.).
-void MafiaFamily::printSuccessorsByGeneration(MafiaNode* boss) const {
-    int height = treeHeight(boss);
-    int order = 0;
-    for (int depth = 1; depth < height; ++depth) {
-        printEligibleAtDepth(boss, depth, order);
-    }
-    if (order == 0) {
-        std::cout << "  (no hay sucesores elegibles en su linea)\n";
-    }
-}
-
-// Muestra la linea de sucesion actual a partir del jefe.
-void MafiaFamily::showSuccessionLine() const {
+// muestra la linea de sucesion actual: la cadena de personas que tomarian el
+// puesto, en orden, aplicando las condiciones de sucesion sobre el estado actual
+// de los miembros (aclaracion del profesor). se proyecta con el mismo algoritmo
+// que usa la reasignacion real (findSuccessor: primero libres, luego presos vivos),
+// asi el primero de la linea siempre coincide con quien asumiria de verdad.
+void MafiaFamily::showSuccessionLine() {
     MafiaNode* boss = findCurrentBoss(root);
     std::cout << "=== Linea de sucesion actual ===\n";
     if (boss == nullptr) {
@@ -311,8 +284,52 @@ void MafiaFamily::showSuccessionLine() const {
     }
     std::cout << "Jefe actual: ";
     printMemberLine(boss);
-    std::cout << "Sucesores (vivos, libres y dentro del limite de edad):\n";
-    printSuccessorsByGeneration(boss);
+    std::cout << "Quien tomaria el puesto, en orden:\n";
+
+    // lista enlazada local para recordar a los marcados y restaurarlos al final
+    struct MarkNode {
+        MafiaNode* member;
+        MarkNode* next;
+    };
+    MarkNode* marked = nullptr;
+
+    // el jefe actual queda fuera del puesto para proyectar la cadena
+    if (!boss->is_dead) {
+        boss->is_dead = true;
+        marked = new MarkNode{boss, marked};
+    }
+
+    MafiaNode* current = boss;
+    int order = 0;
+    while (true) {
+        MafiaNode* heir = findSuccessor(current, false);
+        if (heir == nullptr) {
+            heir = findSuccessor(current, true);  // ultimo recurso: presos vivos
+        }
+        if (heir == nullptr) {
+            break;
+        }
+        order++;
+        std::cout << "  " << order << ". ";
+        printMemberLine(heir);
+        // el heredero listado queda fuera de juego para hallar al siguiente,
+        // y la proxima busqueda parte desde su posicion (el ahora seria el jefe)
+        heir->is_dead = true;
+        marked = new MarkNode{heir, marked};
+        current = heir;
+    }
+
+    if (order == 0) {
+        std::cout << "  (nadie puede tomar el puesto)\n";
+    }
+
+    // restaurar el estado real: todos los marcados estaban vivos antes de simular
+    while (marked != nullptr) {
+        MarkNode* toDelete = marked;
+        marked->member->is_dead = false;
+        marked = marked->next;
+        delete toDelete;
+    }
 }
 
 // Primer miembro elegible a la profundidad indicada (recorrido de izquierda a derecha).
