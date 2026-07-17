@@ -340,51 +340,42 @@ void MafiaFamily::showSuccessionLine() {
     }
 }
 
-// Primer miembro elegible a la profundidad indicada (recorrido de izquierda a derecha).
-MafiaFamily::MafiaNode* MafiaFamily::findEligibleAtDepth(MafiaNode* node, int depth, bool allowJailed) const {
+// primer miembro elegible en preorden dentro del subarbol (incluye a node): sigue
+// la linea del primer sucesor (rama izquierda) hasta el fondo antes de pasar a la
+// otra rama. asi el nieto por la rama del primer sucesor hereda antes que el
+// segundo sucesor directo (aclaracion del profesor).
+MafiaFamily::MafiaNode* MafiaFamily::findEligiblePreorder(MafiaNode* node, bool allowJailed) const {
     if (node == nullptr) {
         return nullptr;
     }
-    if (depth == 0) {
-        return isEligible(node, allowJailed) ? node : nullptr;
+    if (isEligible(node, allowJailed)) {
+        return node;
     }
-    MafiaNode* found = findEligibleAtDepth(node->left, depth - 1, allowJailed);
+    MafiaNode* found = findEligiblePreorder(node->left, allowJailed);
     if (found != nullptr) {
         return found;
     }
-    return findEligibleAtDepth(node->right, depth - 1, allowJailed);
+    return findEligiblePreorder(node->right, allowJailed);
 }
 
-// Busca un sucesor dentro del subarbol, generacion por generacion. Excluye la
-// raiz del subarbol (depth 0) porque es el propio jefe que deja el puesto.
+// busca un sucesor en el subarbol de un jefe siguiendo la linea del primer sucesor
+// en profundidad. excluye la raiz (el jefe que deja el puesto): arranca por su
+// primer subordinado y recorre esa rama entera antes de pasar al segundo.
 MafiaFamily::MafiaNode* MafiaFamily::findHeirInSubtree(MafiaNode* subRoot, bool allowJailed) const {
     if (subRoot == nullptr) {
         return nullptr;
     }
-    int height = treeHeight(subRoot);
-    for (int depth = 1; depth < height; ++depth) {
-        MafiaNode* found = findEligibleAtDepth(subRoot, depth, allowJailed);
-        if (found != nullptr) {
-            return found;
-        }
+    MafiaNode* found = findEligiblePreorder(subRoot->left, allowJailed);
+    if (found != nullptr) {
+        return found;
     }
-    return nullptr;
+    return findEligiblePreorder(subRoot->right, allowJailed);
 }
 
-// Primer miembro elegible en todo el arbol, empezando por la raiz (el mas cercano
-// a la cabeza de la familia). Sirve de ultimo recurso en la busqueda de sucesor.
+// primer miembro elegible de todo el arbol siguiendo la linea del primer sucesor
+// desde la cabeza de la familia (preorden desde la raiz). ultimo recurso.
 MafiaFamily::MafiaNode* MafiaFamily::findAnyEligible(bool allowJailed) const {
-    if (root == nullptr) {
-        return nullptr;
-    }
-    int height = treeHeight(root);
-    for (int depth = 0; depth < height; ++depth) {
-        MafiaNode* found = findEligibleAtDepth(root, depth, allowJailed);
-        if (found != nullptr) {
-            return found;
-        }
-    }
-    return nullptr;
+    return findEligiblePreorder(root, allowJailed);
 }
 
 // primer jefe a la profundidad indicada que tenga sus dos subordinados presentes

@@ -51,11 +51,14 @@ private:
     bool isEligible(MafiaNode* node, bool allowJailed) const;
     // Altura del subarbol (cantidad de niveles).
     int treeHeight(MafiaNode* node) const;
-    // Primer miembro elegible ubicado exactamente a la profundidad indicada.
-    MafiaNode* findEligibleAtDepth(MafiaNode* node, int depth, bool allowJailed) const;
-    // Busca un sucesor dentro de un subarbol, generacion por generacion (excluye la raiz del subarbol).
+    // primer miembro elegible en preorden dentro del subarbol (incluye a node):
+    // sigue la linea del primer sucesor hasta el fondo antes de pasar a la otra rama.
+    MafiaNode* findEligiblePreorder(MafiaNode* node, bool allowJailed) const;
+    // busca un sucesor en el subarbol de un jefe siguiendo la linea del primer
+    // sucesor en profundidad (excluye la raiz, que es el jefe que deja el puesto).
     MafiaNode* findHeirInSubtree(MafiaNode* subRoot, bool allowJailed) const;
-    // Busca el primer miembro elegible en todo el arbol (el mas cercano a la raiz).
+    // primer elegible de todo el arbol siguiendo la linea del primer sucesor desde
+    // la cabeza de la familia (preorden desde la raiz). ultimo recurso.
     MafiaNode* findAnyEligible(bool allowJailed) const;
     // primer jefe (a una profundidad dada) con sus dos subordinados fuera de la carcel.
     MafiaNode* findTwoFreeAtDepth(MafiaNode* node, int depth, bool allowJailed) const;
