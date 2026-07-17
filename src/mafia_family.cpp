@@ -108,6 +108,7 @@ bool MafiaFamily::loadFromCsv(const std::string& path) {
         TempNode* next;
     };
     TempNode* head = nullptr;
+    TempNode* tail = nullptr;
 
     std::string line;
     std::getline(file, line);  // descartar la cabecera
@@ -132,8 +133,15 @@ bool MafiaFamily::loadFromCsv(const std::string& path) {
         MafiaNode* node = new MafiaNode(id, name, last_name, gender, age, id_boss,
                                         is_dead, in_jail, was_boss, is_boss);
 
-        TempNode* temp = new TempNode{node, head};
-        head = temp;
+        // se agrega al final de la lista para conservar el orden del archivo:
+        // el primer subordinado leido queda como hijo izquierdo (prioridad de sucesion)
+        TempNode* temp = new TempNode{node, nullptr};
+        if (tail == nullptr) {
+            head = temp;
+        } else {
+            tail->next = temp;
+        }
+        tail = temp;
     }
     file.close();
 
