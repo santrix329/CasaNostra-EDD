@@ -64,8 +64,10 @@ cd bin
 ## Funcionalidades
 
 1. **Carga automática** del árbol desde el CSV según la relación de jefatura.
-2. **Línea de sucesión actual**: lista únicamente a los miembros elegibles
-   (vivos, libres y dentro del límite de edad), ordenados por generación.
+2. **Línea de sucesión actual**: proyecta, en orden, la cadena de personas que
+   tomarían el puesto aplicando las condiciones de sucesión sobre el estado
+   actual de los miembros (solo vivos; los presos aparecen únicamente cuando
+   ya no quedan candidatos libres).
 3. **Reasignación automática del jefe** cuando el actual muere, va preso o supera
    el límite de edad, siguiendo la escalada de reglas de sucesión.
 4. **Edición** de los datos de cualquier miembro, excepto `id` e `id_boss`.
