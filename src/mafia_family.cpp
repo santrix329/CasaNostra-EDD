@@ -546,6 +546,7 @@ bool MafiaFamily::editMember(int id) {
               << "  5) Vivo / Muerto\n"
               << "  6) Libre / Preso\n"
               << "  7) Fue jefe (was_boss)\n"
+              << "  8) Es jefe (is_boss)\n"
               << "  0) Cancelar\n> ";
 
     int option;
@@ -628,6 +629,44 @@ bool MafiaFamily::editMember(int id) {
             int value;
             if (std::cin >> value && (value == 0 || value == 1)) {
                 node->was_boss = (value == 1);
+            } else {
+                std::cin.clear();
+                std::cout << "Valor invalido; se mantiene el actual.\n";
+            }
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            break;
+        }
+        case 8: {
+            std::cout << "Es jefe (0 = no, 1 = si): ";
+            int value;
+            if (std::cin >> value && (value == 0 || value == 1)) {
+                // se normaliza la invariante de jefe unico: al nombrar un jefe
+                // nuevo, el anterior deja el puesto y queda como ex-jefe.
+                if (value == 1 && !node->is_boss) {
+                    MafiaNode* previousBoss = findCurrentBoss(root);
+                    if (previousBoss != nullptr && previousBoss != node) {
+                        previousBoss->is_boss = false;
+                        previousBoss->was_boss = true;
+                        std::cout << "El puesto le fue retirado a "
+                                  << previousBoss->name << " " << previousBoss->last_name << ".\n";
+                    }
+                    node->is_boss = true;
+                } else if (value == 0 && node->is_boss) {
+                    // al quitarle el puesto a mano, este pasa a su sucesor segun
+                    // las reglas (si quedara sin jefe, el propio ex-jefe seria
+                    // reelegido por la reasignacion automatica al seguir apto).
+                    node->is_boss = false;
+                    node->was_boss = true;
+                    MafiaNode* successor = findSuccessor(node, false);
+                    if (successor == nullptr) {
+                        successor = findSuccessor(node, true);
+                    }
+                    if (successor != nullptr) {
+                        successor->is_boss = true;
+                        std::cout << "El puesto pasa a " << successor->name
+                                  << " " << successor->last_name << ".\n";
+                    }
+                }
             } else {
                 std::cin.clear();
                 std::cout << "Valor invalido; se mantiene el actual.\n";
