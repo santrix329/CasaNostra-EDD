@@ -67,6 +67,8 @@ private:
     MafiaNode* findBossWithTwoFreeSuccessors(bool allowJailed) const;
     // Aplica las reglas de sucesion (ADR-003) para hallar el reemplazo de un jefe que deja el puesto.
     MafiaNode* findSuccessor(MafiaNode* leavingBoss, bool allowJailed) const;
+    // dibuja un titulo enmarcado (solo estetico) para separar las secciones.
+    void printBanner(const std::string& title) const;
     // Imprime en pantalla una linea con los datos y el estado de un miembro.
     void printMemberLine(MafiaNode* node) const;
     // Imprime todos los miembros del arbol (recorrido en preorden).

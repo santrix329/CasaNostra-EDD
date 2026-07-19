@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
 #include <limits>
 
 // Constructor del nodo: nace con sus datos y sin subordinados (punteros nulos).
@@ -259,23 +260,41 @@ int MafiaFamily::treeHeight(MafiaNode* node) const {
 }
 
 // Imprime una linea con los datos y el estado de un miembro.
+// dibuja un titulo enmarcado con caracteres ASCII (solo estetico).
+void MafiaFamily::printBanner(const std::string& title) const {
+    std::string border(title.length() + 4, '=');
+    std::cout << "\n" << border << "\n"
+              << "  " << title << "\n"
+              << border << "\n";
+}
+
+// imprime los datos de un miembro alineados en columnas para que las listas se
+// lean como una tabla prolija. es solo presentacion: no cambia ninguna logica.
 void MafiaFamily::printMemberLine(MafiaNode* node) const {
-    std::cout << node->name << " " << node->last_name
-              << " (id " << node->id << ", " << node->age << " anios, "
-              << node->gender << ")";
+    std::string fullName = node->name + " " + node->last_name;
+
+    std::string status;
     if (node->is_boss) {
-        std::cout << " [JEFE]";
+        status += "JEFE ";
     }
     if (node->is_dead) {
-        std::cout << " [MUERTO]";
+        status += "MUERTO ";
     }
     if (node->in_jail) {
-        std::cout << " [PRESO]";
+        status += "PRESO ";
     }
     if (node->age > AGE_LIMIT) {
-        std::cout << " [+70]";
+        status += "+70 ";
     }
-    std::cout << "\n";
+    if (status.empty()) {
+        status = "-";
+    }
+
+    std::cout << std::left << std::setw(20) << fullName
+              << " | id " << std::right << std::setw(2) << node->id
+              << " | " << std::setw(2) << node->age << "a"
+              << " | " << node->gender
+              << " | " << status << "\n";
 }
 
 // muestra la linea de sucesion actual: la cadena de personas que tomarian el
@@ -285,14 +304,14 @@ void MafiaFamily::printMemberLine(MafiaNode* node) const {
 // asi el primero de la linea siempre coincide con quien asumiria de verdad.
 void MafiaFamily::showSuccessionLine() {
     MafiaNode* boss = findCurrentBoss(root);
-    std::cout << "=== Linea de sucesion actual ===\n";
+    printBanner("Linea de sucesion actual");
     if (boss == nullptr) {
         std::cout << "No hay un jefe asignado actualmente.\n";
         return;
     }
-    std::cout << "Jefe actual: ";
+    std::cout << "Jefe actual : ";
     printMemberLine(boss);
-    std::cout << "Quien tomaria el puesto, en orden:\n";
+    std::cout << "\nQuien tomaria el puesto, en orden:\n";
 
     // lista enlazada local para recordar a los marcados y restaurarlos al final
     struct MarkNode {
@@ -318,7 +337,7 @@ void MafiaFamily::showSuccessionLine() {
             break;
         }
         order++;
-        std::cout << "  " << order << ". ";
+        std::cout << std::right << std::setw(3) << order << ". ";
         printMemberLine(heir);
         // el heredero listado queda fuera de juego para hallar al siguiente,
         // y la proxima busqueda parte desde su posicion (el ahora seria el jefe)
@@ -519,7 +538,7 @@ void MafiaFamily::printAll(MafiaNode* node) const {
 
 // Lista todos los miembros (util para que el usuario identifique un id a editar).
 void MafiaFamily::listAllMembers() const {
-    std::cout << "=== Miembros de la familia ===\n";
+    printBanner("Miembros de la familia");
     if (root == nullptr) {
         std::cout << "  (no hay miembros cargados)\n";
         return;
@@ -689,13 +708,16 @@ bool MafiaFamily::editMember(int id) {
 
 // Bucle interactivo principal. Se ejecuta hasta que el usuario elige salir (0).
 void MafiaFamily::run() {
+    printBanner("CASA NOSTRA - Sistema de sucesion");
     int option = -1;
     do {
-        std::cout << "\n===== CASA NOSTRA - Sistema de sucesion =====\n"
+        std::cout << "\n---------------- Menu ----------------\n"
                   << "  1) Ver linea de sucesion actual\n"
                   << "  2) Listar todos los miembros\n"
                   << "  3) Editar un miembro\n"
-                  << "  0) Salir\n> ";
+                  << "  0) Salir\n"
+                  << "--------------------------------------\n"
+                  << "Opcion > ";
 
         if (!(std::cin >> option)) {
             std::cin.clear();
